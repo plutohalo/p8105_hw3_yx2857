@@ -1,0 +1,105 @@
+---
+title: "HW3_yx2857"
+author: "Yifan Xu"
+date: "2024-10-13"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+library(tidyverse)
+library(ggridges)
+library(patchwork)
+```
+
+# Problem 1  
+```{r Q1_data}
+library(p8105.datasets)
+data("ny_noaa")
+
+ny_noaa_clean <-  
+  ny_noaa %>% 
+  separate(date, into = c("year", "month", "day"), convert = TRUE) %>% 
+  mutate(
+    tmax = as.numeric(tmax),
+    tmin = as.numeric(tmin))
+
+ny_noaa_clean %>% 
+  count(snow) %>%
+  arrange(desc(n))
+
+ny_noaa %>% summary()
+```
+
+_The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue._  
+
+_Then, do or answer the following (commenting on the results of each):_  
+
+_Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?_
+
+The `NY_NOAA` dataset contains `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` variables. The variables are: `r paste(names(ny_noaa), collapse = ", ")`. The dataset contains information about the weather in New York, and the variables include weather station id, date of observation,  precipitation (tenths of mm), snowfall (mm), snow depth (mm), and min and max temperature (tenths of degrees C).  
+Missing data is found cross observations for temperature, precipitation, and snowfall. The missing rate of min and max temperature are the highest, which are `r paste0(round(100*sum(is.na(ny_noaa$tmin))/nrow(ny_noaa),0), "%")` and `r paste0(round(100*sum(is.na(ny_noaa$tmax))/nrow(ny_noaa),0), "%")`, respectively. The missing rate of precipitation is `r paste0(round(100*sum(is.na(ny_noaa$pcrp))/nrow(ny_noaa),0), "%")`, the missing rate of snowfall is `r paste0(round(100*sum(is.na(ny_noaa$snow))/nrow(ny_noaa),0), "%")`, and the missing rate of snow depth is `r paste0(round(100*sum(is.na(ny_noaa$snwd))/nrow(ny_noaa),0), "%")`.  
+
+0 is the most commonly observed value for snowfall. This is because most days of the year, it does not snow at all in NY. The second most commonly observed value is `NA`, indicating missingness. Other common values are 25, 13, 51, and 76, suggesting that snowfall is originally recorded in units of inch and converted to mm.
+
+
+
+
+_Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?_
+
+```{r}
+ny_noaa_clean %>% 
+  group_by(id, year, month) %>% 
+  filter(month %in% c(1, 7)) %>% 
+  summarize(mean_tmax = mean(tmax, na.rm = TRUE, color = id)) %>% 
+  ggplot(aes(x = year, y = mean_tmax, group = id)) + geom_point() + geom_path() +
+  facet_grid(~month) +
+  labs(title = "Mean monthly temperature for each station across years for January and July")
+
+```
+
+The mean temperature in January is much lower than the mean temperature in July for all stations and across all years. We can observe that temperature measurements at all stations are highly uniform in trend, from peak to valley, across the years, and this pattern appears both in January and July.  
+We can see one uncharacteristically cold station in July of 1987 or 1988, as well as a few other less drastic outliers.
+
+
+_Make a two-panel plot showing_   
+(i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option)  
+(ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year. 
+```
+```{r}
+hex = 
+  ny_noaa %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_hex()
+
+ridge = 
+  ny_noaa %>% 
+  filter(snow < 100, snow > 0) %>%
+  ggplot(aes(x = snow, y = as.factor(year))) + 
+  geom_density_ridges()
+
+hex + ridge
+```
+
+# Problem 2  
+```{r Q2_data}
+
+
+```
