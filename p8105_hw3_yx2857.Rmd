@@ -31,6 +31,7 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ```
 
+
 **Problem 1**  
 ```{r}
 library(p8105.datasets)
@@ -38,36 +39,28 @@ data("ny_noaa")
 
 ny_noaa %>% summary()
 
-ny_noaa_clean <- ny_noaa %>% 
+ny_noaa <- ny_noaa %>% 
   separate(date, into = c("year", "month", "day"), convert = TRUE) %>% 
   mutate(
     tmax = as.numeric(tmax),
     tmin = as.numeric(tmin))
 
-ny_noaa_clean %>% 
+ny_noaa %>% 
   count(snow) %>%
   arrange(desc(n))
 
 ```
 
-_The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue._  
-
-_Then, do or answer the following (commenting on the results of each):_  
-
-_Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?_
-
+ 
 The `NY_NOAA` dataset contains `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` variables. The variables are: `r paste(names(ny_noaa), collapse = ", ")`. The dataset contains information about the weather in New York, and the variables include weather station id, date of observation,  precipitation (tenths of mm), snowfall (mm), snow depth (mm), and min and max temperature (tenths of degrees C).  
-Missing data is found cross observations for temperature, precipitation, and snowfall. The missing rate of min and max temperature are the highest, which are `r paste0(round(100*sum(is.na(ny_noaa$tmin))/nrow(ny_noaa),0), "%")` and `r paste0(round(100*sum(is.na(ny_noaa$tmax))/nrow(ny_noaa),0), "%")`, respectively. The missing rate of precipitation is `r paste0(round(100*sum(is.na(ny_noaa$pcrp))/nrow(ny_noaa),0), "%")`, the missing rate of snowfall is `r paste0(round(100*sum(is.na(ny_noaa$snow))/nrow(ny_noaa),0), "%")`, and the missing rate of snow depth is `r paste0(round(100*sum(is.na(ny_noaa$snwd))/nrow(ny_noaa),0), "%")`.  
+Missing data is found cross observations for temperature, precipitation, and snowfall. The missing rate of min and max temperature are the highest, which are `r paste0(round(100*sum(is.na(ny_noaa$tmin))/nrow(ny_noaa),0), "%")` and `r paste0(round(100*sum(is.na(ny_noaa$tmax))/nrow(ny_noaa),0), "%")`, respectively. The missing rate of precipitation is `r paste0(round(100*sum(is.na(ny_noaa$prcp))/nrow(ny_noaa),0), "%")`, the missing rate of snowfall is `r paste0(round(100*sum(is.na(ny_noaa$snow))/nrow(ny_noaa),0), "%")`, and the missing rate of snow depth is `r paste0(round(100*sum(is.na(ny_noaa$snwd))/nrow(ny_noaa),0), "%")`.  
 
 0 is the most commonly observed value for snowfall. This is because most days of the year, it does not snow at all in NY. The second most commonly observed value is `NA`, indicating missingness. Other common values are 25, 13, 51, and 76, suggesting that snowfall is originally recorded in units of inch and converted to mm.  
 
-
-
-
-_Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?_  
+  
 
 ```{r}
-ny_noaa_clean %>% 
+ny_noaa  %>% 
   group_by(id, year, month) %>% 
   filter(month %in% c(1, 7)) %>% 
   summarize(mean_tmax = mean(tmax, na.rm = TRUE, color = id)) %>% 
@@ -89,7 +82,8 @@ _Make a two-panel plot showing_
 hex = 
   ny_noaa %>% 
   ggplot(aes(x = tmin, y = tmax)) + 
-  geom_hex()
+  geom_hex()+
+  theme(legend.text = element_text(size = 5) )
 
 ridge = 
   ny_noaa %>% 
@@ -101,7 +95,7 @@ hex + ridge
 ```
 
 ```{r}
-rm(ny_noaa, ny_noaa_clean)
+rm(ny_noaa )
 
 ```
 
@@ -167,16 +161,7 @@ According to the plot, we can see that the total activity of participants decrea
 ```{r}
 # Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences. 
 
-accel_tidy %>% 
-  pivot_longer(cols = starts_with("min"), names_to = "minute", values_to = "activity") %>% 
-  mutate(minute = as.numeric(str_remove(minute, "min"))) %>% 
-  ggplot(aes(x = minute, y = activity, color = sex)) + 
-  geom_line(alpha = 0.5) +
-  facet_wrap(~ education) +
-  labs(title = "24-hour Activity Time Courses by Education Level",
-       x = "Minute",
-       y = "Activity") +
-  theme_minimal()
+
 
 accel_tidy %>%
   pivot_longer(cols = starts_with("min"), names_to = "minute", values_to = "activity") %>%
@@ -192,11 +177,11 @@ accel_tidy %>%
     y = "Activity Level",
     color = "Sex"
   ) +
-  scale_x_continuous(breaks = seq(0, 24, by = 1)) + 
+  scale_x_continuous(breaks = seq(0, 24, by = 2)) + 
   theme_minimal()
 
 ```
-From this plot, we can learn the male participants with "More than high school" are having more activity at night time.
+From this plot, we can learn the male participants with "More than high school" are having more activity at night time than female of this education. And participants with "more than high school", both male and female are having more activity at early morning time than the other two categories.  
 
 ```{r}
 rm(accel, accel_tidy, covar)
@@ -205,24 +190,79 @@ rm(accel, accel_tidy, covar)
 
 **Problem 3**
 
-```{r}
+```{r, show_col_types = FALSE }
 # Citi Bike is a bike sharing system in New York City; riders can rent pedal-powered or electric bikes from starting stations and return them to another station at their destination. Introduced in 2013, the system is immensely popular and expanded rapidly. Riders who use this system often may become “members” with lower rental rates.
 # 
 # This zip file contains data on rides taken on the NYC Citi Bike system. Files contain 1% of all rides with a total duration less than 4 hours in each of four months. Import, clean, and tidy these data, and describe the resulting dataset.
-# 
-# Produce a reader-friendly table showing the total number of rides in each combination of year and month separating casual riders and Citi Bike members. Comment on these results.
-# 
-# Make a table showing the 5 most popular starting stations for July 2024; include the number of rides originating from these stations.
-# 
-# Make a plot to investigate the effects of day of the week, month, and year on median ride duration. This plot can include one or more panels, but should facilitate comparison across all variables of interest. Comment on your observations from this plot.
-# 
-# There were relatively few electric Citi Bikes in 2020, but many more are available now. For data in 2024, make a figure that shows the impact of month, membership status, and bike type on the distribution of ride duration. Comment on your results
 
+citi_bike <- read_csv("data/citibike/Jan 2020 Citi.csv") %>% 
+  mutate( year = "2020", month = "January") %>%
+  bind_rows(read_csv("data/citibike/July 2020 Citi.csv")%>% 
+  mutate( year = "2020", month = "July") ) %>% 
+  bind_rows(read_csv("data/citibike/Jan 2024 Citi.csv")%>% 
+  mutate( year = "2024", month = "January") ) %>% 
+  bind_rows(read_csv("data/citibike/July 2024 Citi.csv")%>% 
+  mutate( year = "2024", month = "July") ) %>% 
+  janitor::clean_names()
+
+# Produce a reader-friendly table showing the total number of rides in each combination of year and month separating casual riders and Citi Bike members. Comment on these results.
+
+citi_bike %>% 
+  count(year, month, member_casual) 
+```
+According to the table, the number of rides in 2024 is higher than 2020. The number of rides in January is lower than July in the same year. The number of rides for members is higher than casual riders, but there are more casual riders in 2024 in terms of proportion.  
+
+```{r}
+
+# Make a table showing the 5 most popular starting stations for July 2024; include the number of rides originating from these stations.
+
+citi_bike %>% 
+  filter(month == "July", year == "2024") %>% 
+  count(start_station_name) %>% 
+  arrange(desc(n)) %>% 
+  head(5)
 ```
 
+```{r}
+# Make a plot to investigate the effects of day of the week, month, and year on median ride duration. This plot can include one or more panels, but should facilitate comparison across all variables of interest. Comment on your observations from this plot.
+ 
+citi_bike %>%
+  group_by(year, month, weekdays) %>%
+  summarize(median_duration = median(duration, na.rm = TRUE), .groups = "drop") %>% 
+  ggplot(aes(x = factor(weekdays, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")), 
+             y = median_duration, 
+             color = interaction(year, month),  
+             linetype = interaction(year, month),   
+             group = interaction(year, month))) +   
+  geom_line(size = 1) +  
+  labs(title = "Median Ride Duration by Weekdays, Year, and Month",
+       x = "Weekdays",
+       y = "Median Ride Duration",
+       color = "Year-Month",    
+       linetype = "Year-Month") +
+  theme(legend.position = "right")
+
+
+
+```
+According to the plot, we can see that the median ride duration is higher in July than Jan. in the same year. The median ride duration is higher in July than January. The median ride duration is generally higher on weekends than weekdays, except for Jan. 2024.  
 
 
 ```{r}
 
+# There were relatively few electric Citi Bikes in 2020, but many more are available now. For data in 2024, make a figure that shows the impact of month, membership status, and bike type on the distribution of ride duration. Comment on your results
+
+citi_bike %>% 
+  filter(year == "2024") %>% 
+  ggplot(aes(x = duration, fill = member_casual)) + 
+  geom_density(alpha = 0.5) + 
+  facet_grid(~ month + rideable_type) + 
+  labs(title = "Distribution of Ride Duration by Month, Membership Status, and Bike Type",
+       x = "Duration (minutes)",
+       y = "Density",
+       fill = "Membership Status") +
+  theme_minimal()
 
 ```
+  
+From the plot, we can read that the distribution of ride duration for casual riders is flatter than members, and the distribution of ride duration for electric bikes is less spread than classic bikes. The shorter ride duration for electronic bike riders is higher in January than July. The distribution of classic ride duration is pretty consistent in Jan. and July.  
